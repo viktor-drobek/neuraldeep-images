@@ -1,5 +1,4 @@
 ---
-author: kimi2.6 & qwen3.8 27b (published by viktor-drobek)
 name: neuraldeep-images
 description: >
   Image generation and processing skill powered by NeuralDeep Image API.
