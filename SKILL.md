@@ -9,7 +9,6 @@ description: >
 metadata:
   neuraldeep:
     emoji: "🖼️"
-    requires_file: "~/.coddy/providers/neuraldeep/neuraldeep-auth.json"
     base_url: "https://api.neuraldeep.ru/v1/images"
     endpoints:
       - /v1/images/generate
@@ -34,23 +33,20 @@ Use this skill whenever the user needs:
 
 ## Requirements
 
-### Primary key source
-```bash
-~/.coddy/providers/neuraldeep/neuraldeep-auth.json
-```
-Extract: `jq -r '.api_key' ~/.coddy/providers/neuraldeep/neuraldeep-auth.json`
+Python 3.10+ is sufficient; the helper uses only the standard library.
+Run commands from this skill's directory. No `curl`, `jq`, or `httpx` is required.
 
-### Fallback
-```bash
-${NEURALDEEP_API_KEY}
-```
+The helper first reads `api_key` from
+`${CODDY_HOME:-~/.coddy}/providers/neuraldeep/neuraldeep-auth.json`, then falls
+back to `NEURALDEEP_API_KEY` for missing, malformed, null, or empty file values.
+It never prints the key. If neither source works, it returns `blocked`; use
+`coddy providers login neuraldeep` or supply the environment variable securely.
+Do not use `jq -r .api_key` as a presence check: JSON null becomes the string `null`.
 
-### Resolve key helper
-```bash
-ND_KEY=$(jq -r '.api_key' ~/.coddy/providers/neuraldeep/neuraldeep-auth.json 2>/dev/null)
-[ -z "$ND_KEY" ] && ND_KEY="${NEURALDEEP_API_KEY}"
-```
-If empty → return `BLOCKED` + suggest `coddy providers login neuraldeep`.
+Read [Starter and Relay safety](STARTER_RELAY.md) before submitting work.
+Every billed operation must pass the helper's live subscription, public-price,
+and service-quota checks. A chat `decision.can_request=false` is not a service
+quota decision. State files and artifacts are private runtime data, not repo files.
 
 ## Base URL
 
@@ -62,14 +58,10 @@ https://api.neuraldeep.ru/v1/images
 
 ## 1. Image Generation (FLUX)
 
-### Submit task
+### Submit, poll, and save
 ```bash
-ND_KEY=$(jq -r '.api_key' ~/.coddy/providers/neuraldeep/neuraldeep-auth.json 2>/dev/null || echo "${NEURALDEEP_API_KEY}")
-ND_TASK=$(curl -sS https://api.neuraldeep.ru/v1/images/generate \
-  -H "Authorization: Bearer ${ND_KEY}" \
-  -H "Content-Type: application/json" \
-  -d '{"prompt":"кот-космонавт, неон","options":{"aspect_ratio":"1:1"}}' \
-  | python3 -c "import sys, json; print(json.load(sys.stdin)['task_uid'])")
+printf '%s\n' '{"prompt":"an astronaut cat in neon","options":{"aspect_ratio":"1:1"}}' > request.json
+python3 scripts/client.py run generate --payload request.json --state image-state.json --output out.png
 ```
 
 **Params:**
@@ -78,7 +70,7 @@ ND_TASK=$(curl -sS https://api.neuraldeep.ru/v1/images/generate \
   - Set `translate: false` to disable auto-translation.
 - `options.aspect_ratio` (string, optional) — one of:
   - `1:1` (default) · `9:16` · `16:9` · `4:5` · `3:2` · `5:3` · `3:5`
-- `options` may also contain `style`, `negative_prompt` depending on model support.
+- `width`, `height`, and `size` are unsupported; use `options.aspect_ratio`.
 
 **Response:**
 ```json
@@ -87,23 +79,20 @@ ND_TASK=$(curl -sS https://api.neuraldeep.ru/v1/images/generate \
 
 ### Poll status
 ```bash
-curl -sS "https://api.neuraldeep.ru/v1/images/tasks/${ND_TASK}" \
-  -H "Authorization: Bearer ${ND_KEY}"
+# Resume the same provider job only after a timeout or transient polling error.
+python3 scripts/client.py resume --state image-state.json --output out.png --timeout 300
 ```
 
 **Response:**
-```json
+```text
 {"task_uid": "...", "status": "pending | processing | finished | failed", ...}
 ```
 
 **Polling interval:** every 1 second up to 120 seconds. GPU queue may occasionally stall.
 
 ### Download result
-```bash
-curl -sS "https://api.neuraldeep.ru/v1/images/tasks/${ND_TASK}/result" \
-  -H "Authorization: Bearer ${ND_KEY}" \
-  -o out.png
-```
+`run` and `resume` download `GET /v1/images/tasks/{uid}/result` only after
+`status=finished`. On failure or timeout they leave no new result artifact.
 
 Returns the PNG image as raw binary.
 
@@ -112,11 +101,7 @@ Returns the PNG image as raw binary.
 ## 2. Upscale ×4
 
 ```bash
-ND_KEY=$(jq -r '.api_key' ~/.coddy/providers/neuraldeep/neuraldeep-auth.json 2>/dev/null || echo "${NEURALDEEP_API_KEY}")
-curl -sS https://api.neuraldeep.ru/v1/images/upscale \
-  -H "Authorization: Bearer ${ND_KEY}" \
-  -F "image=@photo.jpg" \
-  -o photo_upscaled.png
+python3 scripts/client.py run upscale --file photo.jpg --state upscale-state.json --output photo-upscaled.png
 ```
 
 Submit as **multipart/form-data** with `image=@<filename>`.
@@ -126,10 +111,7 @@ Submit as **multipart/form-data** with `image=@<filename>`.
 ## 3. Background Removal
 
 ```bash
-curl -sS https://api.neuraldeep.ru/v1/images/background/remove \
-  -H "Authorization: Bearer ${ND_KEY}" \
-  -F "image=@portrait.png" \
-  -o transparent.png
+python3 scripts/client.py run background/remove --file portrait.png --state background-state.json --output transparent.png
 ```
 
 ---
@@ -137,24 +119,17 @@ curl -sS https://api.neuraldeep.ru/v1/images/background/remove \
 ## 4. Image Enhancement
 
 ```bash
-curl -sS https://api.neuraldeep.ru/v1/images/enhance \
-  -H "Authorization: Bearer ${ND_KEY}" \
-  -H "Content-Type: application/json" \
-  -d '{"url":"https://example.com/photo.jpg"}' \
-  -o enhanced.png
+python3 scripts/client.py run enhance --file photo.jpg --state enhance-state.json --output enhanced.png
 ```
 
-Also supports multipart: `-F "image=@photo.jpg"`.
+All processing examples use the documented multipart `image` field. Each POST returns a task ID, not image bytes; the helper polls and then downloads the binary result.
 
 ---
 
 ## 5. Avatar Generation
 
 ```bash
-curl -sS https://api.neuraldeep.ru/v1/images/avatar \
-  -H "Authorization: Bearer ${ND_KEY}" \
-  -F "image=@selfie.jpg" \
-  -o avatar.png
+python3 scripts/client.py run avatar --file selfie.jpg --state avatar-state.json --output avatar.png
 ```
 
 ---
@@ -162,43 +137,25 @@ curl -sS https://api.neuraldeep.ru/v1/images/avatar \
 ## 6. Quota Check
 
 ```bash
-curl -sS "https://api.neuraldeep.ru/v1/images/quota" \
-  -H "Authorization: Bearer ${ND_KEY}"
+python3 scripts/client.py check generate
 ```
+
+Verified quota structure: top-level `tier`, with `img.day.remaining` and
+`img.month.remaining`. Both windows must cover one operation.
 
 ---
 
 ## Complete Python Example: Generate + Poll + Save
 
 ```python
-import time, httpx, json, os
-
-BASE = "https://api.neuraldeep.ru/v1"
-KEY = json.load(open(os.path.expanduser(
-    "~/.coddy/providers/neuraldeep/neuraldeep-auth.json"
-)))["api_key"]
-H = {"Authorization": f"Bearer {KEY}"}
-
-# 1. Submit generation job
-job = httpx.post(
-    f"{BASE}/images/generate",
-    headers=H,
-    json={"prompt": "кот-космонавт в стиле киберпанк", "options": {"aspect_ratio": "1:1"}},
-).json()
-uid = job["task_uid"]
-
-# 2. Poll (max 120s)
-for _ in range(120):
-    st = httpx.get(f"{BASE}/images/tasks/{uid}", headers=H).json()
-    if st["status"] == "finished":
-        break
-    if st["status"] == "failed":
-        raise RuntimeError("Image generation failed")
-    time.sleep(1)
-
-# 3. Download PNG
-img = httpx.get(f"{BASE}/images/tasks/{uid}/result", headers=H).content
-open("out.png", "wb").write(img)
+import json
+from pathlib import Path
+import subprocess
+Path("request.json").write_text(json.dumps({"prompt": "an astronaut cat in neon",
+                                         "options": {"aspect_ratio": "1:1"}}))
+subprocess.run(["python3", "scripts/client.py", "run", "generate", "--payload", "request.json",
+                "--state", "python-image-state.json", "--output", "out.png"], check=True)
+# out.png exists as a new artifact only after successful polling and download.
 ```
 
 ---
@@ -214,7 +171,7 @@ open("out.png", "wb").write(img)
 
 - `401` — invalid key
 - `429` — quota exhausted → `Retry-After`
-- `500`/`503` — GPU queue is full → retry after a delay
+- `500`/`503` — stop; reconcile an uncertain submission instead of retrying it
 - Generation queue may stall: keep a timeout when polling.
 
 ## Privacy & Security
