@@ -39,8 +39,8 @@ as asynchronous jobs, including multipart processing rather than direct PNG POST
 
 ## Final results
 
-- `python3 -B -m unittest discover -s tests`: **37 tests passed** in this repo
-  (22 original plus 15 added below). The original 22-test shared suite passed in
+- `python3 -B -m unittest discover -s tests`: **38 tests passed** in this repo
+  (22 original plus 16 added below). The original 22-test shared suite passed in
   all four service repos (88 total); the notes below say what was ported since.
 - `python3 -B scripts/client.py --help`: passed, with no network call.
 - `git diff --check`: passed.
@@ -128,3 +128,14 @@ never runs as Search, so this was not a live crash here.
 and failed first for all three statuses. **37 tests passed**, both normally and
 with `LC_ALL=C PYTHONUTF8=0`, with no `EncodingWarning` under
 `-X warn_default_encoding`.
+
+## whisper-1 service blocked
+
+Ported from neuraldeep-whisper-1 (36d8bc4) so `scripts/client.py` stays identical
+across repos apart from `SERVICE`: the helper now knows a synchronous `whisper`
+service (operation `transcribe`, public price ID `whisper-1`). whisper-1 is billed
+per minute and has no verified remaining-quota endpoint, so `guard()` and
+`submission()` block it like SpeechCore uploads. Images behaviour is unchanged.
+`test_whisper_is_blocked_without_verified_quota` failed first. **38 tests
+passed**, both normally and with `LC_ALL=C PYTHONUTF8=0`, with no
+`EncodingWarning` under `-X warn_default_encoding`.
