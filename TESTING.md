@@ -94,3 +94,9 @@ is rejected.
 
 `.github/workflows/tests.yml` runs the unit suite and `--help` on Python 3.10 and
 the latest 3.x, with credentials blanked so no billed endpoint can be reached.
+
+Ported from neuraldeep-ocr: a reused `--state` path now blocks with "State
+file already exists" instead of the generic CLI message, makes no HTTP call,
+and leaves the existing file untouched. The updated duplicate-state test and the
+new `test_existing_state_path_is_refused_with_clear_reason` failed first; the
+suite is now **34 tests**.
