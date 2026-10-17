@@ -39,8 +39,8 @@ as asynchronous jobs, including multipart processing rather than direct PNG POST
 
 ## Final results
 
-- `python3 -B -m unittest discover -s tests`: **38 tests passed** in this repo
-  (22 original plus 16 added below). The original 22-test shared suite passed in
+- `python3 -B -m unittest discover -s tests`: **41 tests passed** in this repo
+  (22 original plus 19 added below). The original 22-test shared suite passed in
   all four service repos (88 total); the notes below say what was ported since.
 - `python3 -B scripts/client.py --help`: passed, with no network call.
 - `git diff --check`: passed.
@@ -146,3 +146,17 @@ Added `AGENTS.md`, the guide for coding agents (Codex, Coddy and others) working
 in this repo. `test_fenced_examples_parse_without_execution` now also checks its
 fenced examples; it failed first because the file did not exist. The test count
 is unchanged at **38**.
+
+## Malformed resume state and whisper coverage
+
+Ported from neuraldeep-speechcore (a9a8073) via neuraldeep-whisper-1 (eda8436):
+`resume` of a hand-edited or corrupted state (not an object, or with a
+non-string `status` or non-list `errors`) now blocks with "State is not
+resumable" instead of crashing. `test_resume_of_malformed_state_is_blocked_not_crashed`
+failed first in all five subtests with `TypeError`, `AttributeError` or
+`JobError`. Two whisper tests close a coverage gap: removing `"whisper"` from
+`SYNCHRONOUS` fails `test_whisper_is_synchronous_and_refuses_resume`, and
+removing the `submission()` whisper block fails
+`test_whisper_run_is_blocked_before_any_request`. **41 tests passed**, both
+normally and with `LC_ALL=C PYTHONUTF8=0`, with no `EncodingWarning` under
+`-X warn_default_encoding`.
