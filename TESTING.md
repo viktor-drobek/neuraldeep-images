@@ -100,3 +100,9 @@ file already exists" instead of the generic CLI message, makes no HTTP call,
 and leaves the existing file untouched. The updated duplicate-state test and the
 new `test_existing_state_path_is_refused_with_clear_reason` failed first; the
 suite is now **34 tests**.
+
+Ported from neuraldeep-ocr: polling defaults now come from `POLL_INTERVAL = 2`
+and `DEFAULT_TIMEOUT = 120` (used by `poll()` and `--timeout`, which gained help
+text). `test_polling_defaults_come_from_shared_constants` failed first.
+`scripts/client.py` is now identical across all four repos except `SERVICE`;
+the suite is now **35 tests**.
