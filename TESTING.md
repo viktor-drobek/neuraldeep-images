@@ -39,8 +39,8 @@ as asynchronous jobs, including multipart processing rather than direct PNG POST
 
 ## Final results
 
-- `python3 -B -m unittest discover -s tests`: **35 tests passed** in this repo
-  (22 original plus 13 added below). The original 22-test shared suite passed in
+- `python3 -B -m unittest discover -s tests`: **36 tests passed** in this repo
+  (22 original plus 14 added below). The original 22-test shared suite passed in
   all four service repos (88 total); the notes below say what was ported since.
 - `python3 -B scripts/client.py --help`: passed, with no network call.
 - `git diff --check`: passed.
