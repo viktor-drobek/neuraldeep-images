@@ -88,7 +88,8 @@ python3 scripts/client.py resume --state image-state.json --output out.png --tim
 {"task_uid": "...", "status": "pending | processing | finished | failed", ...}
 ```
 
-**Polling interval:** every 1 second up to 120 seconds. GPU queue may occasionally stall.
+**Polling interval:** every 2 seconds, for up to 120 seconds by default; pass
+`--timeout SECONDS` to wait longer. GPU queue may occasionally stall.
 
 ### Download result
 `run` and `resume` download `GET /v1/images/tasks/{uid}/result` only after
@@ -170,7 +171,9 @@ subprocess.run(["python3", "scripts/client.py", "run", "generate", "--payload", 
 ## Error Handling
 
 - `401` — invalid key
-- `429` — quota exhausted → `Retry-After`
+- `429` — quota exhausted or rate limited. The helper does not retry or wait for
+  `Retry-After`; on submission it reports `reconciliation_required` like any other
+  HTTP failure. A new submission is a separate decision after a fresh quota check.
 - `500`/`503` — stop; reconcile an uncertain submission instead of retrying it
 - Generation queue may stall: keep a timeout when polling.
 
