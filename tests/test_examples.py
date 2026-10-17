@@ -17,7 +17,7 @@ SPEC.loader.exec_module(client)
 class ExampleTests(unittest.TestCase):
     def test_fenced_examples_parse_without_execution(self):
         root = Path(__file__).parents[1]
-        for name in ("README.md", "SKILL.md", "STARTER_RELAY.md"):
+        for name in ("README.md", "SKILL.md", "STARTER_RELAY.md", "AGENTS.md"):
             text = (root / name).read_text(encoding="utf-8")
             for number, match in enumerate(re.finditer(r"```(python|bash)\n(.*?)```", text, re.S)):
                 with self.subTest(file=name, block=number):

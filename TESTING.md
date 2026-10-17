@@ -139,3 +139,10 @@ per minute and has no verified remaining-quota endpoint, so `guard()` and
 `test_whisper_is_blocked_without_verified_quota` failed first. **38 tests
 passed**, both normally and with `LC_ALL=C PYTHONUTF8=0`, with no
 `EncodingWarning` under `-X warn_default_encoding`.
+
+## Agent guide
+
+Added `AGENTS.md`, the guide for coding agents (Codex, Coddy and others) working
+in this repo. `test_fenced_examples_parse_without_execution` now also checks its
+fenced examples; it failed first because the file did not exist. The test count
+is unchanged at **38**.

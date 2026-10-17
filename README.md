@@ -39,6 +39,9 @@ The helper checks live service quota rather than hard-coding daily limits.
 
 Run offline tests: `python3 -B -m unittest discover -s tests`.
 
+AI coding agents (Codex, Coddy and others) working on this repository should read
+[AGENTS.md](./AGENTS.md) first.
+
 ## License
 
 [MIT](./LICENSE)
