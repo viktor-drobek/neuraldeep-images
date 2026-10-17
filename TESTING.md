@@ -39,8 +39,8 @@ as asynchronous jobs, including multipart processing rather than direct PNG POST
 
 ## Final results
 
-- `python3 -B -m unittest discover -s tests`: **36 tests passed** in this repo
-  (22 original plus 14 added below). The original 22-test shared suite passed in
+- `python3 -B -m unittest discover -s tests`: **37 tests passed** in this repo
+  (22 original plus 15 added below). The original 22-test shared suite passed in
   all four service repos (88 total); the notes below say what was ported since.
 - `python3 -B scripts/client.py --help`: passed, with no network call.
 - `git diff --check`: passed.
@@ -114,5 +114,17 @@ helper in a C locale, whose default text encoding is ASCII, and failed: an auth
 file with a non-ASCII field was reported as having no credential, and a UTF-8
 `--payload` or state file raised `UnicodeDecodeError`. The helper and tests now
 read and write text as UTF-8 explicitly. **36 tests passed**, both normally and
+with `LC_ALL=C PYTHONUTF8=0`, with no `EncodingWarning` under
+`-X warn_default_encoding`.
+
+## Synchronous resume guard
+
+Ported from neuraldeep-search (ac7260d) to keep `scripts/client.py` identical
+across repos apart from `SERVICE`. For Search, `resume` of a hand-edited state
+(status `submitted`, `timed_out` or `poll_error`) crashed with an uncaught
+`UnboundLocalError`; a `SYNCHRONOUS` service set now blocks it up front. Images
+never runs as Search, so this was not a live crash here.
+`test_resume_of_edited_resumable_state_is_blocked_not_crashed` patches `SERVICE`
+and failed first for all three statuses. **37 tests passed**, both normally and
 with `LC_ALL=C PYTHONUTF8=0`, with no `EncodingWarning` under
 `-X warn_default_encoding`.
