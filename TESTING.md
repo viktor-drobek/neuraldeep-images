@@ -39,9 +39,9 @@ as asynchronous jobs, including multipart processing rather than direct PNG POST
 
 ## Final results
 
-- `python3 -B -m unittest discover -s tests`: **31 tests passed** in this repo
-  (22 original plus 9 added below). The original 22-test shared suite passed in
-  all four service repos (88 total); the 9 additions have not yet been ported.
+- `python3 -B -m unittest discover -s tests`: **32 tests passed** in this repo
+  (22 original plus 10 added below). The original 22-test shared suite passed in
+  all four service repos (88 total); the 10 additions are not all ported yet.
 - `python3 -B scripts/client.py --help`: passed, with no network call.
 - `git diff --check`: passed.
 - Fenced Python examples parsed with `ast.parse`; Bash examples passed `bash -n`.
@@ -81,6 +81,11 @@ the multipart `filename` header, so a name containing quotes, `;` or line breaks
 could inject header text. It failed before the fix; the helper now keeps only a
 short alphanumeric extension and otherwise sends `filename="upload"`. This fix
 still needs porting to the other three service repos.
+
+A tenth regression test, ported from neuraldeep-search (cbb6fc3), showed that
+`request()` left an `HTTPError` response open until garbage collection. It
+failed before the fix; the error is now closed before `RequestError` is raised,
+and the suite runs without `ResourceWarning`.
 
 `.github/workflows/tests.yml` runs the unit suite and `--help` on Python 3.10 and
 the latest 3.x, with credentials blanked so no billed endpoint can be reached.
