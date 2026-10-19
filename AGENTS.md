@@ -49,6 +49,8 @@ env -u NEURALDEEP_API_KEY -u NEURALDEEP_IMAGES_API_KEY CODDY_HOME=/nonexistent p
 
 ## Safety rules
 
+- Never pass `--wallet-limit` without the user's explicit approval of that amount: a wallet
+  key spends money. `wallet_approval_required` is a question for the user, not an error to fix.
 - Never run `run` or `resume` against the live API while developing or testing; they spend quota.
   `check` is read-only, but run it only when the user asks.
 - Never add, print, or commit credentials, state files, inputs or result artifacts.
