@@ -7,7 +7,7 @@ description: >
   Automatically activates when user asks for image generation, AI art,
   photo processing, or visual asset creation.
 metadata:
-  version: 1.0.0
+  version: 2.0.0
   neuraldeep:
     emoji: "🖼️"
     base_url: "https://api.neuraldeep.ru/v1/images"
